@@ -1,0 +1,3 @@
+[submodule "pygdal_PG_datasource"]
+	path = pygdal_PG_datasource
+	url = https://github.com/IngenieroGeomatico/pygdal_PG_datasource
