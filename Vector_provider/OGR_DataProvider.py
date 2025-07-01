@@ -1,6 +1,11 @@
 # Docu: https://docs.pygeoapi.io/en/latest/plugins.html#example-custom-pygeoapi-vector-data-provider
 
-from pygeoapi.provider.base import BaseProvider
+from pygeoapi.provider.base import BaseProvider, ProviderQueryError
+
+from ..pygdal_PG_datasource.lib.Vector_conex import FuenteDatosVector
+# from pygeoapi.pygeoapi_complementos.pygdal_PG_datasource.lib.Vector_conex import FuenteDatosVector
+
+import json
 
 class OGR_DataProvider(BaseProvider):
     """Mi proveedorde datos vectoriales OGR"""
@@ -21,14 +26,16 @@ class OGR_DataProvider(BaseProvider):
             self.layer = provider_def['layer']
         # 3. Si no, usar la primera capa disponible
         else:
-            layers = None  # Usar aquí una función para obtener las capas
+            fuenteDatos = FuenteDatosVector(self.file)
+            dataset = fuenteDatos.leer()
+            layers = fuenteDatos.obtener_capas()
 
             if not layers:
                 raise ProviderQueryError(f"No hay capas disponibles en {self.file}")
             self.layer = layers[0]
 
         # Abre la capa
-        self.dataset = None # Usar aquí una función para devolver el dataset
+        self.dataset = fuenteDatos
 
     def get_fields(self):
         # Aquí se devuelve un objeto con los atributos y su tipo
@@ -45,22 +52,9 @@ class OGR_DataProvider(BaseProvider):
         self.filename = 'ogr.dat'
 
         # Se devuelve el resultdo
-        return {
-            'type': 'FeatureCollection',
-            'features': [{
-                'type': 'Feature',
-                'id': '371',
-                'geometry': {
-                    'type': 'Point',
-                    'coordinates': [ -75, 45 ]
-                },
-                'properties': {
-                    'stn_id': '35',
-                    'datetime': '2001-10-30T14:24:55Z',
-                    'value': '89.9'
-                }
-            }]
-        }
+        gjson = self.dataset.exportar(EPSG_Salida=4326)
+        print(gjson)
+        return json.loads(gjson)
     
     def get(self, identifier):
         # Devuelve un solo objeto por ID
