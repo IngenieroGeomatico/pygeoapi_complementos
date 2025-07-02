@@ -3,9 +3,7 @@
 from pygeoapi.provider.base import BaseProvider, ProviderQueryError
 
 from ..pygdal_PG_datasource.lib.Vector_conex import FuenteDatosVector
-# from pygeoapi.pygeoapi_complementos.pygdal_PG_datasource.lib.Vector_conex import FuenteDatosVector
 
-import json
 
 class OGR_DataProvider(BaseProvider):
     """Mi proveedorde datos vectoriales OGR"""
@@ -14,28 +12,24 @@ class OGR_DataProvider(BaseProvider):
         """hereda de la clase padre"""
         super().__init__(provider_def)
 
+        self.layer = None
         self.file = provider_def['data']
         self.collection_id = provider_def.get('name', '') 
-        self.layer = None
 
-        # 1. Si tiene "__", usar parte final como nombre de capa
-        if '__layer__' in self.collection_id:
-            self.layer = self.collection_id.split('__layer__', 1)[1]
-        # 2. Si se define en el YAML
-        elif 'layer' in provider_def:
+        # 1. . Si se define en el YAML
+        if 'layer' in provider_def:
             self.layer = provider_def['layer']
-        # 3. Si no, usar la primera capa disponible
+        # 2. Si no, usar la primera capa disponible
         else:
             fuenteDatos = FuenteDatosVector(self.file)
-            dataset = fuenteDatos.leer()
+            fuenteDatos.leer(datasetCompleto=True)
             layers = fuenteDatos.obtener_capas()
+            fuenteDatos.datasource =  None
 
             if not layers:
                 raise ProviderQueryError(f"No hay capas disponibles en {self.file}")
             self.layer = layers[0]
-
-        # Abre la capa
-        self.dataset = fuenteDatos
+            self.layersArray = layers
 
     def get_fields(self):
         # Aquí se devuelve un objeto con los atributos y su tipo
@@ -47,14 +41,29 @@ class OGR_DataProvider(BaseProvider):
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, **kwargs):
+        
+        if properties:
+            propertiesDict = dict(properties)
+            # Se comprueba que exista el valor __Layer__ para sacar la capa que se quiere mostrar
+            if '__layer__' in propertiesDict:
+                layerValue = propertiesDict['__layer__']
 
-        # Se puede especificar opcionalmente el nombre del archivo de salida
-        self.filename = 'ogr.dat'
+                # Intentar convertir a entero para ver si es numérico en string
+                try:
+                    int_value = int(layerValue)
+                    self.layer = self.layersArray[int_value]
+                except (ValueError, TypeError):
+                    self.layer = layerValue
+                    
+        # Se carga el dataset de la capa 
+        fuenteDatos = FuenteDatosVector(self.file)
+        fuenteDatos.leer(capa=self.layer)
+        self.dataset = fuenteDatos
+        
 
         # Se devuelve el resultdo
         gjson = self.dataset.exportar(EPSG_Salida=4326)
-        print(gjson)
-        return json.loads(gjson)
+        return gjson
     
     def get(self, identifier):
         # Devuelve un solo objeto por ID
