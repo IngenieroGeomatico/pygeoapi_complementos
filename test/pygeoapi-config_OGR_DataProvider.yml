@@ -130,6 +130,5 @@ resources:
             - type: feature
               name: pygeoapi.pygeoapi_complementos.Vector_provider.OGR_DataProvider.OGR_DataProvider
               data: https://www.juntadeandalucia.es/institutodeestadisticaycartografia/dega/sites/default/files/datos/094-dera-1-relieve.zip
-              id_field: id_dera
-              title_field: id_dera  
+
 
