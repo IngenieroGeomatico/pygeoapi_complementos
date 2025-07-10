@@ -42,8 +42,12 @@ server:
     # cors: true
     pretty_print: true
     limits:
-        default_items: 20
-        max_items: 50
+        default_items: 10  # applies to vector data
+        max_items: 50  # applies to vector data
+        max_distance_x: 123  # applies to all datasets
+        max_distance_y: 456 # applies to all datasets
+        max_distance_units: m  # as per UCUM https://ucum.org/ucum#section-Tables-of-Terminal-Symbols
+        on_exceed: throttle  # one of error, throttle
     # templates:
       # path: /path/to/Jinja2/templates
       # static: /path/to/static/folder # css/js/img
@@ -131,4 +135,8 @@ resources:
               name: pygeoapi.pygeoapi_complementos.Vector_provider.OGR_DataProvider.OGR_DataProvider
               data: https://www.juntadeandalucia.es/institutodeestadisticaycartografia/dega/sites/default/files/datos/094-dera-1-relieve.zip
 
+        limits:
+            default_items: 10  # applies to vector data
+            max_items: 9999999999999  # applies to vector data
+            on_exceed: throttle  # one of error, throttle
 

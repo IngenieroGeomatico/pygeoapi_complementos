@@ -36,7 +36,6 @@ class OGR_DataProvider(BaseProvider):
                     if propiedad not in self._fields:
                         self._fields[propiedad] = valores
             
-            
             if not layers:
                 raise ProviderQueryError(f"No hay capas disponibles en {self.file}")
             self.layer = layers[0]
@@ -50,12 +49,14 @@ class OGR_DataProvider(BaseProvider):
         self._fields = self.dataset.obtener_atributos(self.layer)
         return self._fields 
 
+
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, **kwargs):
         
         if properties:
             propertiesDict = dict(properties)
+            sqlFilter = None
             # Se comprueba que exista el valor __Layer__ para sacar la capa que se quiere mostrar
             if '__layer__' in propertiesDict:
                 layerValue = propertiesDict['__layer__']
@@ -67,6 +68,13 @@ class OGR_DataProvider(BaseProvider):
                 except (ValueError, TypeError):
                     self.layer = layerValue
 
+            # Crear lista de condiciones sin incluir '__layer__'
+            condiciones = [f"{k} = '{v}'" for k, v in propertiesDict.items() if k != '__layer__' and k in self._fields]
+            # Unir las condiciones con 'AND'
+            if condiciones:
+                filtro_sql = ' AND '.join(condiciones)
+                sqlFilter = True
+
         self.title = self.layer
                     
         # Se carga el dataset de la capa 
@@ -75,24 +83,50 @@ class OGR_DataProvider(BaseProvider):
             fuenteDatos.leer(capa=self.layer)
             self.dataset = fuenteDatos
 
+
+        if properties and sqlFilter:
+            self.dataset.ejecutar_sql(f'select * from "{self.layer}" WHERE {filtro_sql}',
+                                    self.layer        
+            )  
+        
+        if bbox:
+            self.dataset.MRE_datos(capaEntrada=self.layer, MRE=bbox, EPSG_MRE="EPSG:4326")
+        
         if sortby:
-            fuenteDatos.ejecutar_sql(f'select * from "{self.layer}" ORDER BY "{sortby[0]['property']}"',
+            self.dataset.ejecutar_sql(f'select * from "{self.layer}" ORDER BY "{sortby[0]['property']}"',
                                     self.layer,
                                     dialect='SQLITE'            
             )  
-
+            
         if offset:
-            fuenteDatos.ejecutar_sql(f'select * from "{self.layer}" OFFSET {offset}',
-                                    self.layer            
+            self.dataset.ejecutar_sql(f'select * from "{self.layer}" OFFSET {offset}',
+                                    self.layer          
             )
-        
-        if limit:
-            fuenteDatos.ejecutar_sql(f'select * from "{self.layer}" LIMIT {limit}',
-                                    self.layer            
-            )    
 
-        # Se devuelve el resultdo
-        gjson = self.dataset.exportar(EPSG_Salida=4326)
+        if limit:
+            self.dataset.ejecutar_sql(f'select * from "{self.layer}" LIMIT {limit}',
+                                    self.layer
+            )   
+        # viene del parámetro properties
+        if select_properties:
+            select_str = ', '.join(select_properties)
+            self.dataset.ejecutar_sql(f'select {select_str} from "{self.layer}" LIMIT {limit}',
+                                    self.layer
+            ) 
+
+        # viene del parámetro skipGeometry
+        if skip_geometry:
+            self.dataset.borrar_geometria(capa=self.layer)
+        
+        if resulttype == 'hits':
+            gjson = {
+                'type': 'FeatureCollection',
+                'numberMatched': self.dataset.datasource.GetLayerByName(self.layer).GetFeatureCount(),
+                'features': []
+            }
+        else:
+            gjson = self.dataset.exportar(EPSG_Salida=4326)
+
         gjson['name'] = self.layer
         gjson['title'] = f'Capa: {self.layer}'
 
