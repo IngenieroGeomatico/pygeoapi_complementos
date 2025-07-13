@@ -13,9 +13,11 @@ class OGR_DataProvider(BaseProvider):
         super().__init__(provider_def)
 
         self.layer = None
+        self.__layer__ = '__layer__'
         self.overwriteLinksLayer = False
         self.file = provider_def['data']
         self.collection_id = provider_def.get('name', '') 
+        self.id_field = provider_def.get('id_field') 
 
         # 1. Si se define en el YAML
         if 'layer' in provider_def:
@@ -58,8 +60,9 @@ class OGR_DataProvider(BaseProvider):
             propertiesDict = dict(properties)
             sqlFilter = None
             # Se comprueba que exista el valor __Layer__ para sacar la capa que se quiere mostrar
-            if '__layer__' in propertiesDict:
-                layerValue = propertiesDict['__layer__']
+            if self.__layer__  in propertiesDict:
+                layerValue = propertiesDict[self.__layer__]
+                
 
                 # Intentar convertir a entero para ver si es numérico en string
                 try:
@@ -69,19 +72,26 @@ class OGR_DataProvider(BaseProvider):
                     self.layer = layerValue
 
             # Crear lista de condiciones sin incluir '__layer__'
-            condiciones = [f"{k} = '{v}'" for k, v in propertiesDict.items() if k != '__layer__' and k in self._fields]
+            condiciones = [f"{k} = '{v}'" for k, v in propertiesDict.items() if k != self.__layer__  and k in self._fields]
             # Unir las condiciones con 'AND'
             if condiciones:
                 filtro_sql = ' AND '.join(condiciones)
                 sqlFilter = True
 
         self.title = self.layer
-                    
+    
         # Se carga el dataset de la capa 
         if not self.dataset:
             fuenteDatos = FuenteDatosVector(self.file)
             fuenteDatos.leer(capa=self.layer)
             self.dataset = fuenteDatos
+
+        # comprobar que tiene ID y si no, crearle uno
+        if not self.id_field:
+            id_ = 'ID_OGR'
+            self.dataset.crear_ID(capa=self.layer, nombreCampo=id_)
+            self.id_field = id_
+            self.title_field = id_
 
 
         if properties and sqlFilter:
@@ -125,7 +135,7 @@ class OGR_DataProvider(BaseProvider):
                 'features': []
             }
         else:
-            gjson = self.dataset.exportar(EPSG_Salida=4326)
+            gjson = self.dataset.exportar(EPSG_Salida=4326, ID=self.id_field)
 
         gjson['name'] = self.layer
         gjson['title'] = f'Capa: {self.layer}'
@@ -136,25 +146,53 @@ class OGR_DataProvider(BaseProvider):
                     'rel': 'collection',
                     'type': 'application/geo+json',
                     'title': f'Capa: {self.layer} ||',
-                    'href': f'/collections/OGR_1/items?__layer__={self.layer}'
+                    'href': f'/collections/OGR_1/items?{self.__layer__}={self.layer}'
                 }
-        ]
+            ]
+            gjson[self.__layer__] = True
         return gjson
     
-    def get(self, identifier):
+    def get(self, identifier, **kwargs):
+
+        # Se comprueba que exista el valor __Layer__ para sacar la capa que se quiere mostrar
+        capa = kwargs.get(self.__layer__)
+        print(capa)
+    
+        if capa:
+            layerValue = capa
+
+            # Intentar convertir a entero para ver si es numérico en string
+            try:
+                int_value = int(layerValue)
+                self.layer = self.layersArray[int_value]
+            except (ValueError, TypeError):
+                self.layer = layerValue
+        
+        self.title = self.layer
+    
+        # Se carga el dataset de la capa 
+        if not self.dataset:
+            fuenteDatos = FuenteDatosVector(self.file)
+            fuenteDatos.leer(capa=self.layer)
+            self.dataset = fuenteDatos
+
+        # comprobar que tiene ID y si no, crearle uno
+        if not self.id_field:
+            id_ = 'ID_OGR'
+            self.dataset.crear_ID(capa=self.layer, nombreCampo=id_)
+            self.id_field = id_
+            self.title_field = id_
+
         # Devuelve un solo objeto por ID
-        return {
-            'type': 'Feature',
-            'id': identifier,
-            'geometry': {
-                'type': 'Point',
-                'coordinates': [1.0, 1.0]
-            },
-            'properties': {
-                'id': identifier,
-                'nombre': 'Punto único'
-            }
-        }
+        self.dataset.obtener_objeto_porID(capaEntrada=self.layer, capaSalida=self.layer, ID=self.id_field, valorID=identifier)
+
+        gjson = self.dataset.exportar(EPSG_Salida=4326, ID=self.id_field)
+ 
+        feature = gjson['features'][0] if gjson['features'] else None
+        feature["id"] = identifier
+        feature["properties"][f"{self.id_field}"] = identifier
+
+        return feature
 
     def get_schema():
         # return a `dict` of a JSON schema (inline or reference)
