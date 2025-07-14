@@ -48,9 +48,11 @@ server:
         max_distance_y: 456 # applies to all datasets
         max_distance_units: m  # as per UCUM https://ucum.org/ucum#section-Tables-of-Terminal-Symbols
         on_exceed: throttle  # one of error, throttle
-    # templates:
-      # path: /path/to/Jinja2/templates
-      # static: /path/to/static/folder # css/js/img
+
+    templates:
+      path: pygeoapi/pygeoapi_complementos/templates
+      static: pygeoapi/pygeoapi_complementos/static
+
     map:
         url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
         attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
@@ -64,6 +66,12 @@ server:
 logging:
     level: ERROR
     #logfile: /tmp/pygeoapi.log
+
+format:
+  topojson:
+    mimetype: application/topo+json
+    name: pygeoapi.pygeoapi_complementos.Vector_format.topojson_DataFormat.TopoJSON_DataFormatter
+    title: TopoJSON
 
 metadata:
     identification:
@@ -134,11 +142,16 @@ resources:
             - type: feature
               name: pygeoapi.pygeoapi_complementos.Vector_provider.OGR_DataProvider.OGR_DataProvider
               data: https://www.juntadeandalucia.es/institutodeestadisticaycartografia/dega/sites/default/files/datos/094-dera-1-relieve.zip
-            #   id_field: id_dera
-            #   title_field: id_dera
+              #   id_field: id_dera
+              #   title_field: id_dera
 
         limits:
             default_items: 10  # applies to vector data
             max_items: 9999999999999  # applies to vector data
             on_exceed: throttle  # one of error, throttle
 
+format:
+  topojson:
+    mimetype: application/topo+json
+    name: pygeoapi.pygeoapi_complementos.Vector_format.topojson_DataFormat.TopoJSON_DataFormatter
+    title: TopoJSON
