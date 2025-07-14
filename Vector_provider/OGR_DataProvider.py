@@ -63,7 +63,6 @@ class OGR_DataProvider(BaseProvider):
             if self.__layer__  in propertiesDict:
                 layerValue = propertiesDict[self.__layer__]
                 
-
                 # Intentar convertir a entero para ver si es numérico en string
                 try:
                     int_value = int(layerValue)
