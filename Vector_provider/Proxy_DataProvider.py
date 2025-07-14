@@ -9,10 +9,9 @@ class OGCVectorProxyProvider(BaseProvider):
     def __init__(self, provider_def):
         super().__init__(provider_def)
 
-        print(provider_def)
-
         self.__url__ = '__url__'
         self.__layer__ = '__layer__'
+        self.__properties__ = '__properties__'
         self.layer = None
         self._fields = {}
         self.dataset = None
@@ -49,7 +48,6 @@ class OGCVectorProxyProvider(BaseProvider):
                 self.layersArray = layers
                 self.overwriteLinksLayer = True
 
-                print(self.layer)
       
             else:
                 raise ProviderQueryError(f"El valor {self.__url__} no está definido en las propiedades de la consulta")
@@ -64,6 +62,11 @@ class OGCVectorProxyProvider(BaseProvider):
                     self.layer = self.layersArray[int_value]
                 except (ValueError, TypeError):
                     self.layer = self.layer
+
+            # Se comprueba que exista el valor __properties__ para sacar los atributos que se quieren mostrar
+            if self.__properties__ in propertiesDict:
+                select_properties = propertiesDict[self.__properties__].split(',')
+                
 
             # Crear lista de condiciones sin incluir '__layer__'
             condiciones = [f"{k} = '{v}'" for k, v in propertiesDict.items() if k != self.__layer__  and k in self._fields]
@@ -83,6 +86,7 @@ class OGCVectorProxyProvider(BaseProvider):
         # comprobar que tiene ID y si no, crearle uno
         if not self.id_field:
             id_ = 'ID_OGR'
+            select_properties.append(id_)
             self.dataset.crear_ID(capa=self.layer, nombreCampo=id_)
             self.id_field = id_
             self.title_field = id_
@@ -111,10 +115,11 @@ class OGCVectorProxyProvider(BaseProvider):
             self.dataset.ejecutar_sql(f'select * from "{self.layer}" LIMIT {limit}',
                                     self.layer
             )   
-        # viene del parámetro properties
+        # viene del parámetro properties, para este proveedor __properties__
         if select_properties:
             select_str = ', '.join(select_properties)
-            self.dataset.ejecutar_sql(f'select {select_str} from "{self.layer}" LIMIT {limit}',
+            print(select_str, self.layer)
+            self.dataset.ejecutar_sql(f'select {select_str} from "{self.layer}" ',
                                     self.layer
             ) 
 
@@ -132,6 +137,7 @@ class OGCVectorProxyProvider(BaseProvider):
             gjson = self.dataset.exportar(EPSG_Salida=4326, ID=self.id_field)
 
         gjson['name'] = self.layer
+        gjson['url'] = self.file
         gjson['title'] = f'Capa: {self.layer}'
 
         if self.overwriteLinksLayer:
@@ -144,14 +150,21 @@ class OGCVectorProxyProvider(BaseProvider):
                 }
             ]
             gjson[self.__layer__] = True
+            gjson[self.__url__] = True
         return gjson
     
     def get(self, identifier, **kwargs):
+        
+        # Se comprueba que exista el valor __Layer__ para sacar la capa que se quiere mostrar
+        url = kwargs.get(self.__url__)   
+        if url:
+            self.file = url
+        else:
+            raise ProviderQueryError(f"El valor {self.__url__} no está definido en las propiedades de la consulta")
+
 
         # Se comprueba que exista el valor __Layer__ para sacar la capa que se quiere mostrar
-        capa = kwargs.get(self.__layer__)
-        print(capa)
-    
+        capa = kwargs.get(self.__layer__)    
         if capa:
             layerValue = capa
 

@@ -113,10 +113,18 @@
                   {% set title_field = data.title_field %}
                   <!-- Aure: se añade un condicional para propagar el parámetro get __layer__ -->
                   {% set layer_param = data.get('name') %}
+                  {% set url_param = data.get('url') %}
                   {% set __layer__ = data.get('__layer__') %}
+                  {% set __url__ = data.get('__url__') %}
+                  {% set href = data.items_path ~ '/' ~ ft['id'] %}
+                  {% if __layer__ %}
+                    {% set href = href ~ '?__layer__=' ~ layer_param %}
+                  {% endif %}
+                  {% if __url__ %}
+                    {% set href = href ~ ('&' if '?' in href else '?') ~ '__url__=' ~ url_param %}
+                  {% endif %}
                   <td data-label="{{ title_field }}">
-                      <!-- <a href="{{ data.items_path }}/{{ ft['id'] }}" title="{{ ft.properties.get(title_field) }}"> -->
-                      <a href="{{ data.items_path }}/{{ ft['id'] }}{% if __layer__ %}?__layer__={{ layer_param }}{% endif %}" title="{{ ft.properties.get(title_field) }}">
+                     <a href="{{ href }}" title="{{ ft.properties.get(title_field) }}">
                       {{ ft.properties.get(title_field) | string | truncate( 35 ) }}
                     </a>
                   </td>
