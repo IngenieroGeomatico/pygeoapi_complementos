@@ -248,6 +248,7 @@
   let bboxFeature = null;
 
   mapajsOL.addLayer(vectorLayer);
+  vectorLayer.setZIndex(100)
 
   const popupElement = document.createElement('div');
   popupElement.className = 'ol-popup';
