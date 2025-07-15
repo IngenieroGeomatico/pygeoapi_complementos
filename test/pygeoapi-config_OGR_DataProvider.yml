@@ -177,6 +177,10 @@ resources:
             max_items: 9999999999999  # applies to vector data
             on_exceed: throttle  # one of error, throttle
 
+    random_numbers:
+        type: process
+        processor:
+            name: pygeoapi.pygeoapi_complementos.procesos.numeros_aleatorios.RandomNumberProcessor
 
 format:
   topojson:
