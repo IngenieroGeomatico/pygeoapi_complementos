@@ -1,6 +1,6 @@
 # Docu: https://docs.pygeoapi.io/en/latest/plugins.html#example-custom-pygeoapi-vector-data-provider
 
-from pygeoapi.provider.base import BaseProvider, ProviderQueryError
+from pygeoapi.provider.base import BaseProvider, ProviderQueryError, ProviderConnectionError
 
 from ..pygdal_PG_datasource.lib.Vector_conex import FuenteDatosVector
 
@@ -39,7 +39,7 @@ class OGR_DataProvider(BaseProvider):
                         self._fields[propiedad] = valores
             
             if not layers:
-                raise ProviderQueryError(f"No hay capas disponibles en {self.file}")
+                raise ProviderConnectionError(f"No hay capas disponibles en {self.file}")
             self.layer = layers[0]
             self.layersArray = layers
             self.overwriteLinksLayer = True

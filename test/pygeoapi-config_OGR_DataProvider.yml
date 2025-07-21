@@ -169,13 +169,68 @@ resources:
 
         providers:
             - type: feature
-              name: pygeoapi.pygeoapi_complementos.Vector_provider.Proxy_DataProvider.OGCVectorProxyProvider
+              name: pygeoapi.pygeoapi_complementos.Vector_provider.OGRProxy_DataProvider.OGCVectorProxyProvider
               data: none
 
         limits:
             default_items: 10  # applies to vector data
             max_items: 9999999999999  # applies to vector data
             on_exceed: throttle  # one of error, throttle
+
+    GDAL_1:
+        type: collection
+        title: "GDAL 1"
+        description: "Proveedor ráster con GDAL"
+        description:
+            en: GDAL ------
+        keywords:
+            en:
+                - GDAL
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: http://www.naturalearthdata.com/
+              hreflang: en-US
+              
+        extents:
+            spatial:
+                bbox: [-21.982716,27.435107,9.484518,45.121616]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+
+        providers:
+            - type: coverage
+              name: pygeoapi.pygeoapi_complementos.Raster_provider.GDAL_DataProvider.GDALRasterProvider
+              data: https://cdn.proj.org/es_ign_egm08-rednap.tif
+              #band: 0
+
+    GDAL_2:
+        type: collection
+        title: "GDAL 2"
+        description: "Proveedor ráster con GDAL"
+        description:
+            en: GDAL 2 ------
+        keywords:
+            en:
+                - GDAL2
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: http://www.naturalearthdata.com/
+              hreflang: en-US
+              
+        extents:
+            spatial:
+                bbox: [-0.916001,39.616420,-0.902211,39.624059]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+
+        providers:
+            - type: coverage
+              name: pygeoapi.pygeoapi_complementos.Raster_provider.GDAL_DataProvider.GDALRasterProvider
+              data: https://rapidmapping-viewer.s3.eu-west-1.amazonaws.com/EMSR773/AOI33/GRA_PRODUCT/EMSR773_AOI33_GRA_PRODUCT_PLEIADES_20241111_1120_ORTHO.tif
+              #band: 0
+
 
     random_numbers:
         type: process
