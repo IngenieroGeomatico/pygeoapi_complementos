@@ -65,18 +65,38 @@ class GDALRasterProvider(BaseProvider):
         if properties:
             self.dataset.extraer_bandas(bandas= properties)
 
-        print('subsets:', subsets)
         print('bbox:', bbox)
         if bbox:
             self.dataset.MRE_datos(MRE=bbox, EPSG_MRE=bbox_crs)
-        print('bbox_crs:', bbox_crs)
-        print('datetime:', datetime_)
+
+        elif subsets:
+            if (self._coverage_properties['x_axis_label'] in subsets and
+                self._coverage_properties['y_axis_label'] in subsets):
+
+                x = self._coverage_properties['x_axis_label']
+                y = self._coverage_properties['y_axis_label']
+
+                bbox = [subsets[x][0], subsets[y][0], subsets[x][1], subsets[y][1]]
+                self.dataset.MRE_datos(MRE=bbox, EPSG_MRE=bbox_crs)
+
+            else:
+                raise ProviderQueryError("Subconjunto debe incluir 'x' e 'y'")
+
         print('kwargs:', kwargs)
+        if 'height' in kwargs or 'width' in kwargs:
+            height = kwargs.get('height', None)
+            width = kwargs.get('width', None)
+            self.dataset.redimensionar(height=height, width=width)
+            
+        print('datetime:', datetime_)
         print('format:', format_)
         if format_ == 'json' or format_ == 'application/json':
             return self.dataset.exportar(outputFormat=format_)
-
-        return 
+        elif format_=='GTiff' or format_ == 'image/tiff':
+            return self.dataset.exportar(outputFormat=format_)
+        else:
+            raise ProviderQueryError(f"Formato no soportado: {format_}")
+        return
 
     def get(self, identifier, **kwargs):
         """
