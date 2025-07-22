@@ -231,6 +231,34 @@ resources:
               data: https://rapidmapping-viewer.s3.eu-west-1.amazonaws.com/EMSR773/AOI33/GRA_PRODUCT/EMSR773_AOI33_GRA_PRODUCT_PLEIADES_20241111_1120_ORTHO.tif
               #band: 0
 
+    GDAL_PROXY:
+        type: collection
+        title: "GDAL proxy"
+        description: "Proveedor ráster con GDAL proxy"
+        description:
+            en: GDAL proxy ------
+        keywords:
+            en:
+                - GDAL
+                - proxy
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: http://www.naturalearthdata.com/
+              hreflang: en-US
+              
+        extents:
+            spatial:
+                bbox: [-180,-90,180,90]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+
+        providers:
+            - type: coverage
+              name: pygeoapi.pygeoapi_complementos.Raster_provider.GDALProxy_DataProvider.GDALProxyRasterProvider
+              data: ''
+
+
 
     random_numbers:
         type: process

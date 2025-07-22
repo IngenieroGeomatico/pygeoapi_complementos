@@ -45,7 +45,7 @@ class GDALRasterProvider(BaseProvider):
             raise ProviderConnectionError(f"No se pudo abrir el archivo ráster: {self.file}")
 
     def __repr__(self):
-        return f'<GDALProvider> {self.data}'
+        return f'<GDALProvider>'
 
     def get_fields(self):
         """
@@ -61,11 +61,9 @@ class GDALRasterProvider(BaseProvider):
         Por ahora: devuelve info básica del ráster y opcionalmente datos completos.
         """
 
-        print('properties:', properties)
         if properties:
             self.dataset.extraer_bandas(bandas= properties)
 
-        print('bbox:', bbox)
         if bbox:
             self.dataset.MRE_datos(MRE=bbox, EPSG_MRE=bbox_crs)
 
@@ -82,14 +80,11 @@ class GDALRasterProvider(BaseProvider):
             else:
                 raise ProviderQueryError("Subconjunto debe incluir 'x' e 'y'")
 
-        print('kwargs:', kwargs)
         if 'height' in kwargs or 'width' in kwargs:
             height = kwargs.get('height', None)
             width = kwargs.get('width', None)
             self.dataset.redimensionar(height=height, width=width)
             
-        print('datetime:', datetime_)
-        print('format:', format_)
         if format_ == 'json' or format_ == 'application/json':
             return self.dataset.exportar(outputFormat=format_)
         elif format_=='GTiff' or format_ == 'image/tiff':
