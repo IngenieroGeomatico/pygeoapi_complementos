@@ -265,6 +265,12 @@ resources:
         processor:
             name: pygeoapi.pygeoapi_complementos.procesos.numeros_aleatorios.RandomNumberProcessor
 
+    buffer_data:
+        type: process
+        processor:
+            name: pygeoapi.pygeoapi_complementos.procesos.areaDeInfluencia.bufferDataProcessor
+
+
 format:
   topojson:
     mimetype: application/topo+json
