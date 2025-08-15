@@ -1,6 +1,6 @@
 from pygeoapi.provider.base import BaseProvider, ProviderQueryError, ProviderConnectionError
 
-from ..pygdal_PG_datasource.lib.Raster_conex import FuenteDatosRaster
+from ..pygdal_PG_datasource.conex.Raster_conex import FuenteDatosRaster
 
 class GDALProxyRasterProvider(BaseProvider):
     """Mi proveedorde datos Ráster GDAL"""

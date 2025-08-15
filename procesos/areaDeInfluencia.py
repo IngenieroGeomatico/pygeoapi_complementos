@@ -3,7 +3,7 @@
 import logging
 from pygeoapi.process.base import BaseProcessor, ProcessorExecuteError
 
-from ..pygdal_PG_datasource.lib.Vector_conex import FuenteDatosVector
+from ..pygdal_PG_datasource.conex.Vector_conex import FuenteDatosVector
 from ..pygdal_PG_datasource.procesos.vector.geoprocesos import crear_capa_buffer_OGR
 
 LOGGER = logging.getLogger(__name__)

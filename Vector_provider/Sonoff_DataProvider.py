@@ -1,20 +1,52 @@
+# Docu: https://docs.pygeoapi.io/en/latest/plugins.html#example-custom-pygeoapi-vector-data-provider
 
-from pygeoapi.provider.base import BaseProvider, ProviderQueryError
-from ..pygdal_PG_datasource.conex.Vector_conex import FuenteDatosVector
+from pygeoapi.provider.base import BaseProvider, ProviderQueryError, ProviderConnectionError
+
+from ..pygdal_PG_datasource.conex.sonoff_conex import FuenteDatosSonoff
 
 
-class OGCVectorProxyProvider(BaseProvider):
-    """Proveedor vectorial remoto dinámico"""
+class Sonoff_DataProvider(BaseProvider):
+    """Mi proveedorde datos vectoriales OGR"""
 
     def __init__(self, provider_def):
+        """hereda de la clase padre"""
         super().__init__(provider_def)
 
-        self.__url__ = '__url__'
-        self.__layer__ = '__layer__'
-        self.__properties__ = '__properties__'
         self.layer = None
-        self._fields = {}
-        self.dataset = None
+        self.__layer__ = '__layer__'
+        self.overwriteLinksLayer = False
+        self.file = provider_def['data']
+        self.collection_id = provider_def.get('name', '') 
+        self.id_field = provider_def.get('id_field') 
+
+        # 1. Si se define en el YAML
+        if 'layer' in provider_def:
+            self.layer = provider_def['layer']
+            self.overwriteLinksLayer = False
+            fuenteDatos = FuenteDatosSonoff(self.file)
+            fuenteDatos.leer(capa=self.layer)
+            self._fields = fuenteDatos.obtener_atributos(self.layer)
+            self.dataset = fuenteDatos
+        # 2. Si no, usar la primera capa disponible
+        else:
+            fuenteDatos = FuenteDatosSonoff(self.file)
+            fuenteDatos.leer(datasetCompleto=True)
+            layers = fuenteDatos.obtener_capas()
+            atributosPorCapa = fuenteDatos.obtener_atributos()
+            self._fields = {}
+            for nombre_capa, atributos in atributosPorCapa.items():
+                for propiedad, valores in atributos.items():
+                    if propiedad not in self._fields:
+                        self._fields[propiedad] = valores
+            
+            if not layers:
+                raise ProviderConnectionError(f"No hay capas disponibles en {self.file}")
+            self.layer = layers[0]
+            self.layersArray = layers
+            self.overwriteLinksLayer = True
+            fuenteDatos.datasource =  None
+            self.dataset = None
+            
 
     def get_fields(self):
         self._fields = self.dataset.obtener_atributos(self.layer)
@@ -28,45 +60,16 @@ class OGCVectorProxyProvider(BaseProvider):
         if properties:
             propertiesDict = dict(properties)
             sqlFilter = None
-
-            # Se comprueba que exista el valor __Layer__ para sacar la capa que se quiere mostrar
-            if self.__url__  in propertiesDict:
-                self.file = propertiesDict[self.__url__]
-                fuenteDatos = FuenteDatosVector(self.file)
-                fuenteDatos.leer(datasetCompleto=True)
-                layers = fuenteDatos.obtener_capas()
-                atributosPorCapa = fuenteDatos.obtener_atributos()
-                self._fields = {}
-                for nombre_capa, atributos in atributosPorCapa.items():
-                    for propiedad, valores in atributos.items():
-                        if propiedad not in self._fields:
-                            self._fields[propiedad] = valores
-                
-                if not layers:
-                    raise ProviderQueryError(f"No hay capas disponibles en {self.file}")
-                self.layer = layers[0]
-                self.layersArray = layers
-                self.overwriteLinksLayer = True
-
-      
-            else:
-                raise ProviderQueryError(f"El valor {self.__url__} no está definido en las propiedades de la consulta")
-
             # Se comprueba que exista el valor __Layer__ para sacar la capa que se quiere mostrar
             if self.__layer__  in propertiesDict:
-                self.layer  = propertiesDict[self.__layer__]
-
+                layerValue = propertiesDict[self.__layer__]
+                
                 # Intentar convertir a entero para ver si es numérico en string
                 try:
-                    int_value = int(self.layer)
+                    int_value = int(layerValue)
                     self.layer = self.layersArray[int_value]
                 except (ValueError, TypeError):
-                    self.layer = self.layer
-
-            # Se comprueba que exista el valor __properties__ para sacar los atributos que se quieren mostrar
-            if self.__properties__ in propertiesDict:
-                select_properties = propertiesDict[self.__properties__].split(',')
-                
+                    self.layer = layerValue
 
             # Crear lista de condiciones sin incluir '__layer__'
             condiciones = [f"{k} = '{v}'" for k, v in propertiesDict.items() if k != self.__layer__  and k in self._fields]
@@ -76,17 +79,16 @@ class OGCVectorProxyProvider(BaseProvider):
                 sqlFilter = True
 
         self.title = self.layer
-
+    
         # Se carga el dataset de la capa 
         if not self.dataset:
-            fuenteDatos = FuenteDatosVector(self.file)
+            fuenteDatos = FuenteDatosSonoff(self.file)
             fuenteDatos.leer(capa=self.layer)
             self.dataset = fuenteDatos
 
         # comprobar que tiene ID y si no, crearle uno
         if not self.id_field:
             id_ = 'ID_OGR'
-            select_properties.append(id_)
             self.dataset.crear_ID(capa=self.layer, nombreCampo=id_)
             self.id_field = id_
             self.title_field = id_
@@ -115,11 +117,10 @@ class OGCVectorProxyProvider(BaseProvider):
             self.dataset.ejecutar_sql(f'select * from "{self.layer}" LIMIT {limit}',
                                     self.layer
             )   
-        # viene del parámetro properties, para este proveedor __properties__
+        # viene del parámetro properties
         if select_properties:
             select_str = ', '.join(select_properties)
-            print(select_str, self.layer)
-            self.dataset.ejecutar_sql(f'select {select_str} from "{self.layer}" ',
+            self.dataset.ejecutar_sql(f'select {select_str} from "{self.layer}" LIMIT {limit}',
                                     self.layer
             ) 
 
@@ -137,7 +138,6 @@ class OGCVectorProxyProvider(BaseProvider):
             gjson = self.dataset.exportar(EPSG_Salida=4326, ID=self.id_field)
 
         gjson['name'] = self.layer
-        gjson['url'] = self.file
         gjson['title'] = f'Capa: {self.layer}'
 
         if self.overwriteLinksLayer:
@@ -150,21 +150,14 @@ class OGCVectorProxyProvider(BaseProvider):
                 }
             ]
             gjson[self.__layer__] = True
-            gjson[self.__url__] = True
         return gjson
     
     def get(self, identifier, **kwargs):
-        
-        # Se comprueba que exista el valor __Layer__ para sacar la capa que se quiere mostrar
-        url = kwargs.get(self.__url__)   
-        if url:
-            self.file = url
-        else:
-            raise ProviderQueryError(f"El valor {self.__url__} no está definido en las propiedades de la consulta")
-
 
         # Se comprueba que exista el valor __Layer__ para sacar la capa que se quiere mostrar
-        capa = kwargs.get(self.__layer__)    
+        capa = kwargs.get(self.__layer__)
+        print(capa)
+    
         if capa:
             layerValue = capa
 
@@ -179,7 +172,7 @@ class OGCVectorProxyProvider(BaseProvider):
     
         # Se carga el dataset de la capa 
         if not self.dataset:
-            fuenteDatos = FuenteDatosVector(self.file)
+            fuenteDatos = FuenteDatosSonoff(self.file)
             fuenteDatos.leer(capa=self.layer)
             self.dataset = fuenteDatos
 
@@ -204,8 +197,3 @@ class OGCVectorProxyProvider(BaseProvider):
     def get_schema():
         # return a `dict` of a JSON schema (inline or reference)
         return ('application/geo+json', {'$ref': 'https://geojson.org/schema/Feature.json'})
-
-
-    
-
-        

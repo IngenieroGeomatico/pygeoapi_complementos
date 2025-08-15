@@ -2,7 +2,7 @@
 
 from pygeoapi.provider.base import BaseProvider, ProviderQueryError, ProviderConnectionError
 
-from ..pygdal_PG_datasource.lib.Vector_conex import FuenteDatosVector
+from ..pygdal_PG_datasource.conex.Vector_conex import FuenteDatosVector
 
 
 class OGR_DataProvider(BaseProvider):

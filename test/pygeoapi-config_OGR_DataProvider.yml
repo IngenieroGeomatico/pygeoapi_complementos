@@ -258,6 +258,42 @@ resources:
               name: pygeoapi.pygeoapi_complementos.Raster_provider.GDALProxy_DataProvider.GDALProxyRasterProvider
               data: ''
 
+    Sonoff_1:
+        type: collection
+        title:
+            en: Sonoff_1
+        description:
+            en: Sonoff_1 ------
+        keywords:
+            en:
+                - Sonoff_1
+                - aaaa
+        links:
+            - type: text/html
+              rel: canonical
+              title: information
+              href: http://www.naturalearthdata.com/
+              hreflang: en-US
+
+        extents:
+            spatial:
+                bbox: [-3.761101,40.393819,-3.760989,40.393995]
+                crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+
+        providers:
+            - type: feature
+              name: pygeoapi.pygeoapi_complementos.Vector_provider.Sonoff_DataProvider.Sonoff_DataProvider
+              data_devices: pygeoapi.pygeoapi_complementos.pygdal_PG_datasource.test.files.devices_sonoff.json
+              # data_devices: pygeoapi.pygeoapi_complementos.pygdal_PG_datasource.test.files.devices_sonoff.sqlite
+              data_params: pygeoapi.pygeoapi_complementos.pygdal_PG_datasource.test.files.params_sonoff.json
+              # layer: MINI-R4
+              # id_field: id_dera
+              # title_field: id_dera
+
+        limits:
+            default_items: 10  # applies to vector data
+            max_items: 9999999999999  # applies to vector data
+            on_exceed: throttle  # one of error, throttle
 
 
     random_numbers:
