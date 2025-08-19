@@ -258,15 +258,15 @@ resources:
               name: pygeoapi.pygeoapi_complementos.Raster_provider.GDALProxy_DataProvider.GDALProxyRasterProvider
               data: ''
 
-    Sonoff_1:
+    Sonoff_1_OGR:
         type: collection
         title:
-            en: Sonoff_1
+            en: Sonoff_1_OGR
         description:
-            en: Sonoff_1 ------
+            en: SonSonoff_1_OGRoff_1 ------
         keywords:
             en:
-                - Sonoff_1
+                - Sonoff_1_OGR
                 - aaaa
         links:
             - type: text/html
@@ -282,13 +282,13 @@ resources:
 
         providers:
             - type: feature
-              name: pygeoapi.pygeoapi_complementos.Vector_provider.Sonoff_DataProvider.Sonoff_DataProvider
-              data_devices: pygeoapi.pygeoapi_complementos.pygdal_PG_datasource.test.files.devices_sonoff.json
-              # data_devices: pygeoapi.pygeoapi_complementos.pygdal_PG_datasource.test.files.devices_sonoff.sqlite
-              data_params: pygeoapi.pygeoapi_complementos.pygdal_PG_datasource.test.files.params_sonoff.json
+              name: pygeoapi.pygeoapi_complementos.Vector_provider.Sonoff_DataProvider.Sonoff_DataProvider_OGR
+              # data: pygeoapi/pygeoapi_complementos/pygdal_PG_datasource/test/files/devices_sonoff.json
+              data: pygeoapi/pygeoapi_complementos/pygdal_PG_datasource/test/files/devices_sonoff.sqlite
+              data_params: pygeoapi/pygeoapi_complementos/pygdal_PG_datasource/test/files/params_sonoff.json
               # layer: MINI-R4
-              # id_field: id_dera
-              # title_field: id_dera
+            #   id_field: id
+            #   title_field: id
 
         limits:
             default_items: 10  # applies to vector data

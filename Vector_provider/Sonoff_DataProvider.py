@@ -2,7 +2,8 @@
 
 from pygeoapi.provider.base import BaseProvider, ProviderQueryError, ProviderConnectionError
 
-from ..pygdal_PG_datasource.conex.sonoff_conex import FuenteDatosSonoff
+from ..pygdal_PG_datasource.conex.sonoff_conex import FuenteDatosSonoff, FuenteDatosSonoff_OGR
+from .OGR_DataProvider import OGR_DataProvider
 
 
 class Sonoff_DataProvider(BaseProvider):
@@ -197,3 +198,21 @@ class Sonoff_DataProvider(BaseProvider):
     def get_schema():
         # return a `dict` of a JSON schema (inline or reference)
         return ('application/geo+json', {'$ref': 'https://geojson.org/schema/Feature.json'})
+    
+
+
+class Sonoff_DataProvider_OGR(OGR_DataProvider):
+
+    def __init__(self, provider_def):
+        """hereda de la clase padre"""
+        self.ruta_SQLite_devices = provider_def['data']
+        self.ruta_json_params = provider_def['data_params']
+        super().__init__(provider_def)
+
+            
+    def leerFuenteDatos(self):
+        fuenteDatos = FuenteDatosSonoff_OGR(ruta_SQLite_devices=self.ruta_SQLite_devices,
+                                                ruta_json_params=self.ruta_json_params
+                                                )
+        return fuenteDatos
+   

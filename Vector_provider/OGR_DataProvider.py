@@ -23,12 +23,14 @@ class OGR_DataProvider(BaseProvider):
         if 'layer' in provider_def:
             self.layer = provider_def['layer']
             self.overwriteLinksLayer = False
+            fuenteDatos = self.leerFuenteDatos()
             fuenteDatos.leer(capa=self.layer)
             self._fields = fuenteDatos.obtener_atributos(self.layer)
+            self._fields[self.__layer__] = {'type': 'string'}
             self.dataset = fuenteDatos
         # 2. Si no, usar la primera capa disponible
         else:
-            fuenteDatos = FuenteDatosVector(self.file)
+            fuenteDatos = self.leerFuenteDatos()
             fuenteDatos.leer(datasetCompleto=True)
             layers = fuenteDatos.obtener_capas()
             atributosPorCapa = fuenteDatos.obtener_atributos()
@@ -37,6 +39,7 @@ class OGR_DataProvider(BaseProvider):
                 for propiedad, valores in atributos.items():
                     if propiedad not in self._fields:
                         self._fields[propiedad] = valores
+            self._fields[self.__layer__] = {'type': 'string'}
             
             if not layers:
                 raise ProviderConnectionError(f"No hay capas disponibles en {self.file}")
@@ -49,12 +52,18 @@ class OGR_DataProvider(BaseProvider):
 
     def get_fields(self):
         self._fields = self.dataset.obtener_atributos(self.layer)
+        self._fields[self.__layer__] = {'type': 'string'}
         return self._fields 
 
+    def leerFuenteDatos(self):
+        fuenteDatos = FuenteDatosVector(self.file)
+        return fuenteDatos
 
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, **kwargs):
+        print(self._fields)
+        print(properties)
         
         if properties:
             propertiesDict = dict(properties)
@@ -70,6 +79,8 @@ class OGR_DataProvider(BaseProvider):
                 except (ValueError, TypeError):
                     self.layer = layerValue
 
+                
+
             # Crear lista de condiciones sin incluir '__layer__'
             condiciones = [f"{k} = '{v}'" for k, v in propertiesDict.items() if k != self.__layer__  and k in self._fields]
             # Unir las condiciones con 'AND'
@@ -81,7 +92,7 @@ class OGR_DataProvider(BaseProvider):
     
         # Se carga el dataset de la capa 
         if not self.dataset:
-            fuenteDatos = FuenteDatosVector(self.file)
+            fuenteDatos = self.leerFuenteDatos()
             fuenteDatos.leer(capa=self.layer)
             self.dataset = fuenteDatos
 
