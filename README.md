@@ -5,6 +5,8 @@ Repositorio para añadir funcionalidades a pygeoapi.
 ¡¡¡¡¡En desarrollo!!!!!
 
 
+source env/bin/activate
+
 export PYTHONPATH=$(pwd)
 
 export PYGEOAPI_OPENAPI=example-openapi.yml
@@ -44,3 +46,13 @@ http://localhost:5000/collections/GDAL_2/coverage/?f=json&height=10&width=10&pro
 http://localhost:5000/collections/GDAL_2/coverage/?f=GTiff&height=10&width=10&properties=1,2&subset=x(-0.910999:-0.909246),y(39.620842:39.621950)
 
 http://localhost:5000/collections/GDAL_PROXY/coverage/?f=json&height=10&width=10&bbox=-0.910999,39.620842,-0.909246,39.62195&__properties__=1,2&__url__=https://rapidmapping-viewer.s3.eu-west-1.amazonaws.com/EMSR773/AOI33/GRA_PRODUCT/EMSR773_AOI33_GRA_PRODUCT_PLEIADES_20241111_1120_ORTHO.tif
+
+
+
+
+http://localhost:5000/collections/Sonoff_1_OGR/items/?__layer__=1
+
+http://localhost:5000/collections/Sonoff_2_OGR/items/1?__layer__=MINIR4
+
+
+

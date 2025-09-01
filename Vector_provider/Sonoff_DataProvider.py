@@ -2,7 +2,7 @@
 
 from pygeoapi.provider.base import BaseProvider, ProviderQueryError, ProviderConnectionError
 
-from ..pygdal_PG_datasource.conex.sonoff_conex import FuenteDatosSonoff, FuenteDatosSonoff_OGR
+from ..pygdal_PG_datasource.conex.sonoff_conex import FuenteDatosSonoff, FuenteDatosSonoff_SQLITE, FuenteDatosSonoff_OGR
 from .OGR_DataProvider import OGR_DataProvider
 
 
@@ -17,6 +17,7 @@ class Sonoff_DataProvider(BaseProvider):
         self.__layer__ = '__layer__'
         self.overwriteLinksLayer = False
         self.file = provider_def['data']
+        self.data_params = provider_def['data_params']
         self.collection_id = provider_def.get('name', '') 
         self.id_field = provider_def.get('id_field') 
 
@@ -24,21 +25,23 @@ class Sonoff_DataProvider(BaseProvider):
         if 'layer' in provider_def:
             self.layer = provider_def['layer']
             self.overwriteLinksLayer = False
-            fuenteDatos = FuenteDatosSonoff(self.file)
+            fuenteDatos = self.fuenteDatos_()
             fuenteDatos.leer(capa=self.layer)
             self._fields = fuenteDatos.obtener_atributos(self.layer)
+            self._fields[self.__layer__] = {'type': 'string'}
             self.dataset = fuenteDatos
         # 2. Si no, usar la primera capa disponible
         else:
-            fuenteDatos = FuenteDatosSonoff(self.file)
+            fuenteDatos = self.fuenteDatos_()
             fuenteDatos.leer(datasetCompleto=True)
-            layers = fuenteDatos.obtener_capas()
+            layers = fuenteDatos.capas
             atributosPorCapa = fuenteDatos.obtener_atributos()
             self._fields = {}
             for nombre_capa, atributos in atributosPorCapa.items():
                 for propiedad, valores in atributos.items():
                     if propiedad not in self._fields:
                         self._fields[propiedad] = valores
+            self._fields[self.__layer__] = {'type': 'string'}
             
             if not layers:
                 raise ProviderConnectionError(f"No hay capas disponibles en {self.file}")
@@ -48,11 +51,18 @@ class Sonoff_DataProvider(BaseProvider):
             fuenteDatos.datasource =  None
             self.dataset = None
             
-
+    def fuenteDatos_(self,capa=None):
+        if self.file.endswith('.sqlite'):
+            fuenteDatos = FuenteDatosSonoff_SQLITE(self.data_params,self.file)
+        else:
+            fuenteDatos = FuenteDatosSonoff(self.data_params,self.file)
+        fuenteDatos.exportar_geojson(capa=capa)
+        return fuenteDatos
+    
     def get_fields(self):
         self._fields = self.dataset.obtener_atributos(self.layer)
+        self._fields[self.__layer__] = {'type': 'string'}
         return self._fields 
-
 
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
@@ -83,60 +93,48 @@ class Sonoff_DataProvider(BaseProvider):
     
         # Se carga el dataset de la capa 
         if not self.dataset:
-            fuenteDatos = FuenteDatosSonoff(self.file)
+            fuenteDatos = self.fuenteDatos_(capa=self.layer)
             fuenteDatos.leer(capa=self.layer)
             self.dataset = fuenteDatos
 
         # comprobar que tiene ID y si no, crearle uno
         if not self.id_field:
             id_ = 'ID_OGR'
-            self.dataset.crear_ID(capa=self.layer, nombreCampo=id_)
+            self.dataset.crear_ID(nombreCampo=id_)
             self.id_field = id_
             self.title_field = id_
 
-
         if properties and sqlFilter:
-            self.dataset.ejecutar_sql(f'select * from "{self.layer}" WHERE {filtro_sql}',
-                                    self.layer        
-            )  
-        
+            self.dataset.aplicar_filtro_sql(filtro_sql)  
+
         if bbox:
-            self.dataset.MRE_datos(capaEntrada=self.layer, MRE=bbox, EPSG_MRE="EPSG:4326")
+            self.dataset.MRE_datos(MRE=bbox)
         
         if sortby:
-            self.dataset.ejecutar_sql(f'select * from "{self.layer}" ORDER BY "{sortby[0]['property']}"',
-                                    self.layer,
-                                    dialect='SQLITE'            
-            )  
-            
+            self.dataset.ordenar_por(campo = sortby[0]['property'],orden="asc") 
+         
         if offset:
-            self.dataset.ejecutar_sql(f'select * from "{self.layer}" OFFSET {offset}',
-                                    self.layer          
-            )
+            self.dataset.offset(offsetValue = offset)
 
         if limit:
-            self.dataset.ejecutar_sql(f'select * from "{self.layer}" LIMIT {limit}',
-                                    self.layer
-            )   
+            self.dataset.limit(limitValue = limit)
+        
         # viene del parámetro properties
         if select_properties:
-            select_str = ', '.join(select_properties)
-            self.dataset.ejecutar_sql(f'select {select_str} from "{self.layer}" LIMIT {limit}',
-                                    self.layer
-            ) 
+            self.dataset.obtenerAtributos(listaAtributos=select_properties)
 
         # viene del parámetro skipGeometry
         if skip_geometry:
-            self.dataset.borrar_geometria(capa=self.layer)
+            self.dataset.borrar_geometria()
         
         if resulttype == 'hits':
             gjson = {
                 'type': 'FeatureCollection',
-                'numberMatched': self.dataset.datasource.GetLayerByName(self.layer).GetFeatureCount(),
+                'numberMatched': len(self.dataset.geojson["features"]),
                 'features': []
             }
         else:
-            gjson = self.dataset.exportar(EPSG_Salida=4326, ID=self.id_field)
+            gjson = self.dataset.geojson
 
         gjson['name'] = self.layer
         gjson['title'] = f'Capa: {self.layer}'
@@ -157,7 +155,6 @@ class Sonoff_DataProvider(BaseProvider):
 
         # Se comprueba que exista el valor __Layer__ para sacar la capa que se quiere mostrar
         capa = kwargs.get(self.__layer__)
-        print(capa)
     
         if capa:
             layerValue = capa
@@ -199,8 +196,6 @@ class Sonoff_DataProvider(BaseProvider):
         # return a `dict` of a JSON schema (inline or reference)
         return ('application/geo+json', {'$ref': 'https://geojson.org/schema/Feature.json'})
     
-
-
 class Sonoff_DataProvider_OGR(OGR_DataProvider):
 
     def __init__(self, provider_def):

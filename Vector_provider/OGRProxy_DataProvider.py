@@ -16,16 +16,24 @@ class OGCVectorProxyProvider(BaseProvider):
         self._fields = {}
         self.dataset = None
 
+        self._fields[self.__layer__] = {'type': 'string'}
+        self._fields[self.__url__ ] = {'type': 'string'}
+        self._fields[self.__properties__] = {'type': 'string'}
+
     def get_fields(self):
         self._fields = self.dataset.obtener_atributos(self.layer)
+        self._fields[self.__layer__] = {'type': 'string'}
+        self._fields[self.__url__ ] = {'type': 'string'}
+        self._fields[self.__properties__] = {'type': 'string'}
         return self._fields 
 
 
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, **kwargs):
-        
+        print(properties)
         if properties:
+            print(properties)
             propertiesDict = dict(properties)
             sqlFilter = None
 

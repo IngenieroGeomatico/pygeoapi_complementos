@@ -14,6 +14,7 @@ class OGR_DataProvider(BaseProvider):
 
         self.layer = None
         self.__layer__ = '__layer__'
+        self.ID_OGR = "ID_OGR"
         self.overwriteLinksLayer = False
         self.file = provider_def['data']
         self.collection_id = provider_def.get('name', '') 
@@ -62,8 +63,6 @@ class OGR_DataProvider(BaseProvider):
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
               select_properties=[], skip_geometry=False, **kwargs):
-        print(self._fields)
-        print(properties)
         
         if properties:
             propertiesDict = dict(properties)
@@ -98,7 +97,7 @@ class OGR_DataProvider(BaseProvider):
 
         # comprobar que tiene ID y si no, crearle uno
         if not self.id_field:
-            id_ = 'ID_OGR'
+            id_ = self.ID_OGR
             self.dataset.crear_ID(capa=self.layer, nombreCampo=id_)
             self.id_field = id_
             self.title_field = id_
@@ -147,6 +146,7 @@ class OGR_DataProvider(BaseProvider):
         else:
             gjson = self.dataset.exportar(EPSG_Salida=4326, ID=self.id_field)
 
+
         gjson['name'] = self.layer
         gjson['title'] = f'Capa: {self.layer}'
 
@@ -166,7 +166,6 @@ class OGR_DataProvider(BaseProvider):
 
         # Se comprueba que exista el valor __Layer__ para sacar la capa que se quiere mostrar
         capa = kwargs.get(self.__layer__)
-        print(capa)
     
         if capa:
             layerValue = capa
@@ -179,16 +178,16 @@ class OGR_DataProvider(BaseProvider):
                 self.layer = layerValue
         
         self.title = self.layer
-    
+
         # Se carga el dataset de la capa 
         if not self.dataset:
-            fuenteDatos = FuenteDatosVector(self.file)
+            fuenteDatos = self.leerFuenteDatos()
             fuenteDatos.leer(capa=self.layer)
             self.dataset = fuenteDatos
 
         # comprobar que tiene ID y si no, crearle uno
         if not self.id_field:
-            id_ = 'ID_OGR'
+            id_ = self.ID_OGR
             self.dataset.crear_ID(capa=self.layer, nombreCampo=id_)
             self.id_field = id_
             self.title_field = id_
